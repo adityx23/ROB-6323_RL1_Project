@@ -1,13 +1,11 @@
 """ACT (LeRobot 0.1.0 ACTPolicy) trainer, shared overnight recipe.
 
-    python act_train.py --bench l90|ocbs --out RUN_DIR [--max-hours H]
+    python act_train.py --bench ocbs --out RUN_DIR [--max-hours H]
 
 Shared recipe (same as the pi0.5 runs): batch 32, 15k steps, AdamW, peak lr 5e-5 with 500 warmup steps and
 cosine decay to 5e-6, grad clip 1.0, no EMA, action chunk 10 (executed 5 at eval). ACT's ResNet backbone
 uses 1/5 of the lr (ACT's usual backbone split), on the same schedule.
 
-l90  : local/libero90_stack (4 LIBERO-90 bowl-stacking tasks); task as a one-hot observation.environment_state
-       (ACT has no language input; ENV inputs are not normalized).
 ocbs : local/ocb_stack (OCBench block-double-task2). Arm actions are trained as deltas from the chunk-start
        joint positions (state[:6]), the same transform pi0.5 uses; gripper stays absolute.
 """
@@ -29,8 +27,6 @@ from lerobot.common.policies.act.modeling_act import ACTPolicy
 from lerobot.configs.types import FeatureType, PolicyFeature
 
 BENCH = {
-    "l90": dict(repo="local/libero90_stack", images=["observation.images.image", "observation.images.wrist"],
-                one_hot=True, arm_delta=False),
     "ocbs": dict(repo="local/ocb_stack", images=["observation.images.front", "observation.images.wrist"],
                  one_hot=False, arm_delta=True),
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pi0.5 fine-tune, shared recipe. sbatch --export=ALL,NAME=pi05_l90|pi05_ocbs train_pi05.sbatch
+# pi0.5 fine-tune, shared recipe. sbatch --export=ALL,NAME=pi05_ocbs train_pi05.sbatch
 #SBATCH --job-name=ovn-pi05
 #SBATCH --account=torch_pr_50_tandon_priority
 #SBATCH --nodes=1

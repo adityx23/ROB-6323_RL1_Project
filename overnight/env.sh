@@ -7,7 +7,4 @@ export OPENPI_DATA_HOME=$RLFT_ROOT/cache/openpi TORCH_HOME=$R/cache/torch XDG_CA
 export MPLCONFIGDIR=$R/cache/matplotlib JAX_COMPILATION_CACHE_DIR=$R/cache/jax TMPDIR=$R/tmp
 export XLA_PYTHON_CLIENT_MEM_FRACTION=0.92 PYTHONUNBUFFERED=1 WANDB_MODE=disabled
 export MUJOCO_GL=egl PYOPENGL_PLATFORM=egl
-export LIBERO_PY=$R/environments/libero-venv/bin/python LIBERO_SRC=$LAIR_OPENPI/third_party/libero
 mkdir -p $RUNS
-# LIBERO dataset must be complete (1699 files incl. meta) before training on it.
-libero_ready() { [ "$(find $HF_LEROBOT_HOME/physical-intelligence/libero -type f -not -path '*/.cache/*' | wc -l)" -ge 1690 ]; }

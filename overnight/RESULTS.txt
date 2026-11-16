@@ -1,4 +1,2 @@
-act    l90_stack   144/201  = 0.716
 act    ocb_stack     0/200  = 0.000
-pi05   l90_stack   184/200  = 0.920
 pi05   ocb_stack   132/200  = 0.660

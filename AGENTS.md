@@ -21,8 +21,6 @@ ROB-6323_RL1_Project/          this repo (job scripts, configs, notes); clone it
   * **rlft-bench venv:** uv 0.9.5, CPython 3.11.14 (uv-managed), `uv sync --frozen` from rlft-bench's `uv.lock`.
     Key packages: jax 0.5.3, torch 2.7.1+cu128, mujoco 3.17.0, mujoco-warp 3.17.0, numpy<2. Full list:
     `torch-setup/rlft_venv_freeze.txt`.
-  * **LIBERO venv:** CPython 3.8.20 with torch 1.11.0+cu113 and mujoco 3.2.3. LIBERO itself comes from
-    `lair-openpi/third_party/libero` @ f78abd6. Full list: `overnight/libero_requirements.lock`.
   * **Weights:** `gs://openpi-assets/checkpoints/pi05_base/params` (12 GB) and the PaliGemma tokenizer, both
     stored in `$RLFT_ROOT/cache/openpi`.
 * Slurm accounts: `torch_pr_50_tandon_priority` for jobs and `torch_pr_50_general` for setup. To use a different
@@ -35,11 +33,10 @@ cd /scratch/$USER
 git clone https://github.com/adityx23/ROB-6323_RL1_Project.git
 cd ROB-6323_RL1_Project
 GIT_LFS_SKIP_SMUDGE=1 git submodule update --init external/rlft-bench external/lair-openpi
-git -C external/lair-openpi submodule update --init --depth 1 third_party/libero   # only for LIBERO evals
 source config.sh
 ```
-Do not run `git submodule update --init --recursive`: `third_party/aloha` is not used, and was never initialized
-in our setup.
+Do not run `git submodule update --init --recursive`: lair-openpi's own submodules (`third_party/aloha`,
+`third_party/libero`) are not used here. We only use OCBench.
 
 ## 2. Environments (CPU jobs)
 
@@ -47,9 +44,7 @@ in our setup.
 source config.sh
 ./submit.sh torch-setup/setup.sbatch            # uv 0.9.5 bootstrap -> Python 3.11 -> uv sync --frozen (~10 min)
 ./submit.sh torch-setup/prefetch_weights.sbatch # pi05_base params + PaliGemma tokenizer -> cache/openpi
-./submit.sh overnight/setup_data.sbatch         # LIBERO venv (py3.8, pinned) + LIBERO dataset + pi05_libero ckpt
-                                                # (--export=ALL,ONLY_VENV=1 builds just the venv)
-bash torch-setup/check_env.sh                   # must print IDENTICAL for both venvs and the expected commits
+bash torch-setup/check_env.sh                   # must print IDENTICAL and the expected commits
 ```
 * `setup.sbatch` refuses to run if `.venv` already exists, if the checkouts are at different commits, or if
   lair-openpi is not the sibling `../lair-openpi`. It never edits `uv.lock`.
@@ -80,7 +75,8 @@ Output: `data/ocbench/regen/visual-block-double-task2-v0/i5/train-p000..p033.npz
 
 ## 4. π0.5 checkpoint ladder (ladder/)
 
-Config: `ladder/pi05_ladder.py`, built on `overnight/ovn_pi05.py` and lair-openpi `pi05_libero`.
+Config: `ladder/pi05_ladder.py`, built on `overnight/ovn_pi05.py`. That file starts from openpi's `pi05_libero`
+TrainConfig only for the `pi05_base` weights and defaults, and replaces its data config with OCBench's.
 * Data and model: `local/ocb_stack_3k`, π0.5 from `pi05_base`, action chunk 30, train-time RTC (delay
   ~ U[0, 15)), continuous state.
 * Optimization: batch 128, 30k steps, AdamW, lr 5e-5 cosine to 5e-6 (500 warmup), grad clip 1.0, EMA 0.999.
@@ -104,23 +100,21 @@ T=$(./submit.sh --parsable --dependency=afterok:$S ladder/train_ladder.sbatch)  
   protocol: replan every 5 rows, each row held 5 control steps, 200 seeds 12345..12544). They are **not yet
   adapted** to the H=30 RTC ladder.
 
-## 5. Overnight runs (overnight/, 200 demos each; see overnight/STATUS.md)
+## 5. Overnight run (overnight/, 200 OCBench demos; see overnight/STATUS.md)
 
 ```bash
-D=$(./submit.sh --parsable overnight/dl_libero90.sbatch)                                   # LIBERO-90 stacking
-./submit.sh --dependency=afterok:$D overnight/convert_l90.sbatch
 ./submit.sh overnight/export_ocb.sbatch                                                  # local/ocb_stack (GPU)
-./submit.sh --export=ALL,NAME=pi05_ocbs overnight/train_pi05.sbatch                      # or NAME=pi05_l90
-./submit.sh --export=ALL,POLICY=pi05,BENCH=ocbs overnight/eval.sbatch                    # or act / l90
+./submit.sh --export=ALL,NAME=pi05_ocbs overnight/train_pi05.sbatch
+./submit.sh --export=ALL,POLICY=pi05,BENCH=ocbs overnight/eval.sbatch                    # or POLICY=act
 ./submit.sh --export=ALL,BENCH=ocbs overnight/train_act.sbatch
 ./submit.sh overnight/gallery.sbatch
 ```
 Results (`overnight/RESULTS.txt`):
 
-| Policy | LIBERO-90 stacking | OCBench stacking |
-|---|---|---|
-| π0.5 | 92% | 66% |
-| ACT | 72% | 0% |
+| Policy | OCBench stacking |
+|---|---|
+| π0.5 | 66% |
+| ACT | 0% |
 
 ## 6. rlft-bench RL (torch-setup/)
 

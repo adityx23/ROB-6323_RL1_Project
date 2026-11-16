@@ -68,7 +68,7 @@ figcaption p { margin: 0; font-size: 13px; line-height: 1.35 }
   <header>
     <span class="label">Overnight run · 2026-11-09</span>
     <h1>Stacking Rollouts: ACT vs π0.5</h1>
-    <p class="lede">Success rates and rollout videos for ACT and π0.5, each trained with one shared recipe on two stacking tasks: four LIBERO-90 bowl-stacking tasks and OCBench two-cube stacking. Each video shows the third-person view next to the wrist view.</p>
+    <p class="lede">Success rates and rollout videos for ACT and π0.5, each trained with one shared recipe on OCBench two-cube stacking. Each video shows the third-person view next to the wrist view.</p>
   </header>
 
   <section>
@@ -95,8 +95,7 @@ figcaption p { margin: 0; font-size: 13px; line-height: 1.35 }
   </section>
 
   <footer class="notes" id="notes">
-    <p>Shared training recipe for all four runs: 200 demos per benchmark, two 128 px views (third-person + wrist), action chunks of 10 with 5 executed before replanning, batch 32, 15k steps, AdamW with 5e-5 peak learning rate, 500 warmup steps and cosine decay to 5e-6, gradient clip 1.0, no EMA. π0.5 starts from the pi05_base weights; ACT trains from scratch (ResNet-18 ImageNet backbone).</p>
-    <p>LIBERO-90: tasks 16, 17, 63, 64 (50 demos each), evaluated on LIBERO's 50 fixed initial states per task at 20 Hz. ACT gets the task as a one-hot input because it has no language input.</p>
+    <p>Shared training recipe for both runs: 200 demos, two 128 px views (third-person + wrist), action chunks of 10 with 5 executed before replanning, batch 32, 15k steps, AdamW with 5e-5 peak learning rate, 500 warmup steps and cosine decay to 5e-6, gradient clip 1.0, no EMA. π0.5 starts from the pi05_base weights; ACT trains from scratch (ResNet-18 ImageNet backbone).</p>
     <p>OCBench: block-double-task2 (stack two cubes), 200 regenerated demos with an image every 5 control steps; 200 seeded eval episodes. Arm actions are deltas from the joint positions at the start of each chunk for both models.</p>
   </footer>
 </div>
@@ -105,7 +104,7 @@ figcaption p { margin: 0; font-size: 13px; line-height: 1.35 }
 const DATA = /*__DATA__*/null;
 const PN = DATA.policy_names, SN = DATA.suite_names;
 const pname = p => PN[p] || p, sname = s => SN[s] || s;
-const COLS = ["l90_stack", "ocb_stack"];
+const COLS = ["ocb_stack"];
 const COLNAME = {};
 const policies = [...new Set(DATA.summary.map(r => r.policy))].sort((a, b) => Object.keys(PN).indexOf(a) - Object.keys(PN).indexOf(b));
 const pct = x => (100 * x).toFixed(1) + "%";

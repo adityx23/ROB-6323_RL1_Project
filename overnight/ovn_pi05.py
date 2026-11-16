@@ -1,7 +1,7 @@
-"""pi0.5 train configs for the overnight run (LIBERO + OCBench), kept outside lair-openpi.
+"""pi0.5 train config for the overnight OCBench stacking run, kept outside lair-openpi.
 
-    python ovn_pi05.py train  <name> [--resume]      # name: pi05_l90 | pi05_ocbs
-    python ovn_pi05.py serve  <name> <ckpt_dir> [port]  # websocket policy server (LIBERO eval)
+    python ovn_pi05.py train  <name> [--resume]      # name: pi05_ocbs
+    python ovn_pi05.py serve  <name> <ckpt_dir> [port]  # websocket policy server
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ STEPS = int(os.environ.get("OVN_STEPS", 15000))
 
 @dataclasses.dataclass(frozen=True)
 class OcbInputs(T.DataTransformFn):
-    """OCBench stacking: front -> base view, wrist -> left wrist; right wrist padded + masked (as LIBERO does)."""
+    """OCBench stacking: front -> base view, wrist -> left wrist; right wrist padded + masked."""
 
     def __call__(self, data: dict) -> dict:
         def img(x):
@@ -74,17 +74,6 @@ class OcbDataConfig(C.DataConfigFactory):
                                    data_transforms=data_t, model_transforms=model_t, action_sequence_keys=("action",))
 
 
-@dataclasses.dataclass(frozen=True)
-class L90DataConfig(C.LeRobotLiberoDataConfig):
-    """openpi's LIBERO transforms, with key names from our converted LIBERO-90 dataset."""
-
-    def create(self, assets_dirs, model_config: _model.BaseModelConfig) -> C.DataConfig:
-        cfg = super().create(assets_dirs, model_config)
-        repack = T.Group(inputs=[T.RepackTransform({
-            "observation/image": "observation.images.image", "observation/wrist_image": "observation.images.wrist",
-            "observation/state": "observation.state", "actions": "action", "prompt": "prompt"})])
-        return dataclasses.replace(cfg, repack_transforms=repack, action_sequence_keys=("action",))
-
 
 def _shared(cfg, name):
     """Shared overnight recipe (same as act_train.py): batch 32, STEPS steps, 500 warmup, cosine 5e-5 -> 5e-6,
@@ -100,11 +89,9 @@ def _shared(cfg, name):
 
 
 def get(name: str) -> C.TrainConfig:
-    base = C.get_config("pi05_libero")  # pi05_base weights, pi0.5 model, LIBERO-style transforms
-    if name == "pi05_l90":
-        return _shared(dataclasses.replace(base, data=L90DataConfig(
-            repo_id="local/libero90_stack", base_config=C.DataConfig(prompt_from_task=True),
-            extra_delta_transform=False)), name)
+    # openpi's pi05_libero TrainConfig is only the starting point (pi05_base weights, optimizer defaults);
+    # its data config is replaced below.
+    base = C.get_config("pi05_libero")
     if name == "pi05_ocbs":
         return _shared(dataclasses.replace(base, data=OcbDataConfig(
             repo_id="local/ocb_stack", base_config=C.DataConfig(prompt_from_task=True))), name)

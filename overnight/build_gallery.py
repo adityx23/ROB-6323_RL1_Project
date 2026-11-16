@@ -18,7 +18,7 @@ import imageio_ffmpeg
 
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 POLICY_NAMES = {"pi05": "π0.5", "act": "ACT"}
-SUITE_NAMES = {"l90_stack": "LIBERO-90 bowl stacking", "ocb_stack": "OCBench cube stacking"}
+SUITE_NAMES = {"ocb_stack": "OCBench cube stacking"}
 
 
 def wilson(k, n, z=1.96):

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Eval one policy on one benchmark. sbatch --export=ALL,POLICY=pi05|act,BENCH=l90|ocbs eval.sbatch
+# Eval one policy on one benchmark. sbatch --export=ALL,POLICY=pi05|act,BENCH=ocbs eval.sbatch
 #SBATCH --job-name=ovn-eval
 #SBATCH --account=torch_pr_50_tandon_priority
 #SBATCH --nodes=1
@@ -32,21 +32,14 @@ SP=$!
 wait_port 8000 || { echo "server did not come up"; tail -40 $SLOG; exit 1; }
 echo "server up $(date -Is)"
 CP=()
-if [ $BENCH = l90 ]; then   # 4 LIBERO-90 stacking tasks x 50 episodes, one client per task
-  for t in 16 17 63 64; do
-    PYTHONPATH=$LIBERO_SRC $CT $LIBERO_PY libero_eval.py --policy $POLICY --suite libero_90 --suite-label l90_stack \
-      --tasks $t --trials 50 --replan 5 --res 128 --out $OUT > $OUT/logs/client-$POLICY-l90-t$t-$SLURM_JOB_ID.log 2>&1 &
-    CP+=($!)
-  done
-else                        # OCBench stacking: 200 seeded episodes, 4 clients x 50
-  for k in 0 1 2 3; do
-    (cd $RLFT_ROOT && $CT $PY $OVN/ocb_eval.py --policy $POLICY --port 8000 --episodes 50 \
-      --seed $((12345 + 50*k)) --replan-rows 5 --out $OUT) > $OUT/logs/client-$POLICY-ocbs-$k-$SLURM_JOB_ID.log 2>&1 &
-    CP+=($!)
-  done
-fi
+# OCBench stacking: 200 seeded episodes, 4 clients x 50
+for k in 0 1 2 3; do
+  (cd $RLFT_ROOT && $CT $PY $OVN/ocb_eval.py --policy $POLICY --port 8000 --episodes 50 \
+    --seed $((12345 + 50*k)) --replan-rows 5 --out $OUT) > $OUT/logs/client-$POLICY-ocbs-$k-$SLURM_JOB_ID.log 2>&1 &
+  CP+=($!)
+done
 wait "${CP[@]}"
 kill $SP 2>/dev/null
-grep "\"policy\": \"$POLICY\"" $OUT/results.jsonl | grep "\"suite\": \"$( [ $BENCH = l90 ] && echo l90_stack || echo ocb_stack )\"" | \
+grep "\"policy\": \"$POLICY\"" $OUT/results.jsonl | grep "\"suite\": \"ocb_stack\"" | \
   python3 -c "import sys,json; r=[json.loads(l) for l in sys.stdin]; print(f'{len(r)} episodes, success {sum(x[\"success\"] for x in r)/max(1,len(r)):.3f}')"
 echo "end=$(date -Is)"

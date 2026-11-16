@@ -3,7 +3,6 @@
     python act_serve.py RUN_DIR [port]
 
 Observation keys sent by the eval clients:
-  LIBERO-90: observation/image, observation/wrist_image (128x128 uint8), observation/state (8), prompt
   OCBench:   observation/front, observation/wrist (128x128 uint8), observation/state (19), prompt
 Returns {"actions": (chunk, action_dim)} un-normalized.
 """
@@ -26,7 +25,6 @@ import websockets.asyncio.server as _wss  # noqa: E402
 _wss.serve = _ft.partial(_wss.serve, ping_interval=None, ping_timeout=None)  # no keepalive drop
 
 CLIENT_KEYS = {
-    "l90": {"observation.images.image": "observation/image", "observation.images.wrist": "observation/wrist_image"},
     "ocbs": {"observation.images.front": "observation/front", "observation.images.wrist": "observation/wrist"},
 }
 

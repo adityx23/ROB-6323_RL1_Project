@@ -1,6 +1,6 @@
 """Export regenerated OCBench block-double-task2 (cube stacking) visual demos to LeRobot v2.1: local/ocb_stack.
 
-Shared-recipe format (matches local/libero90_stack): 200 successful demos, two views (front, wrist) resized to
+Shared-recipe format: 200 successful demos, two views (front, wrist) resized to
 128x128, observation.state = 19-d proprio (joint pos 0:6 ...), action = absolute joint targets (6 arm + gripper
 opening) at every image step (interval 5 -> 10 fps). Training turns arm targets into deltas from state[:6].
 """

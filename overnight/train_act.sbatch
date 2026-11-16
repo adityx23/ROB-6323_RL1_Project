@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ACT, shared recipe. sbatch --export=ALL,BENCH=l90|ocbs train_act.sbatch
+# ACT, shared recipe. sbatch --export=ALL,BENCH=ocbs train_act.sbatch
 #SBATCH --job-name=ovn-act
 #SBATCH --account=torch_pr_50_tandon_priority
 #SBATCH --nodes=1
