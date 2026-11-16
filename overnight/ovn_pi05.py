@@ -12,8 +12,8 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, "/scratch/aap9348/lair-openpi/scripts")
-sys.path.insert(0, "/scratch/aap9348/lair-openpi/src")
+sys.path.insert(0, os.environ["LAIR_OPENPI"] + "/scripts")
+sys.path.insert(0, os.environ["LAIR_OPENPI"] + "/src")
 
 import openpi.models.model as _model  # noqa: E402
 import openpi.models.pi0_config as pi0_config  # noqa: E402
@@ -25,7 +25,7 @@ import websockets.asyncio.server as _wss  # noqa: E402
 
 _wss.serve = _ft.partial(_wss.serve, ping_interval=None, ping_timeout=None)  # no keepalive drop
 
-RUNS = "/scratch/aap9348/rlft-bench/runs/overnight"
+RUNS = os.environ["RLFT_ROOT"] + "/runs/overnight"
 STEPS = int(os.environ.get("OVN_STEPS", 15000))
 
 

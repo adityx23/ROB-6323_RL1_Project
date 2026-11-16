@@ -7,9 +7,10 @@
 #SBATCH --mem=16G
 #SBATCH --gres=gpu:1
 #SBATCH --time=01:30:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
 
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 printf 'job_id=%s\njob_name=%s\naccount=%s\nhost=%s\nnodes=%s\nstart=%s\nworking_directory=%s\n' \
@@ -24,7 +25,7 @@ myquota
 unset JAX_PLATFORMS
 export WANDB_MODE=disabled PYTHONUNBUFFERED=1 HYDRA_FULL_ERROR=1
 printf '%s\n' 'inputs=installed simulator assets; generated oracle data; seed=0; no dataset/model downloads' \
-  'output=/scratch/aap9348/rlft-bench/runs/verification/gpu-JOBID' \
-  'command=bash /home/aap9348/rlft-bench-torch/run.sh python /home/aap9348/rlft-bench-torch/verify_gpu.py'
-bash /home/aap9348/rlft-bench-torch/run.sh python /home/aap9348/rlft-bench-torch/verify_gpu.py
+  'output=$RLFT_ROOT/runs/verification/gpu-JOBID' \
+  'command=bash $PROJ/torch-setup/run.sh python $PROJ/torch-setup/verify_gpu.py'
+bash $PROJ/torch-setup/run.sh python $PROJ/torch-setup/verify_gpu.py
 printf 'end=%s\n' "$(date --iso-8601=seconds)"

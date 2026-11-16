@@ -1,9 +1,11 @@
 """Generate small local OCBench oracle datasets for workflow tests; no downloads."""
+
+import os
 from pathlib import Path
 import pickle
 import sys
 
-sys.path.insert(0, '/scratch/aap9348/rlft-bench')
+sys.path.insert(0, os.environ['RLFT_ROOT'])
 from rlft_bench.data.regenerate import GenKnobs, generate
 
 root = Path(sys.argv[1])

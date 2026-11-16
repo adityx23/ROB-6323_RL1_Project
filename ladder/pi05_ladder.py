@@ -19,7 +19,7 @@ import dataclasses
 import os
 import sys
 
-sys.path.insert(0, "/home/aap9348/rlft-bench-torch/overnight")
+sys.path.insert(0, os.environ["PROJ"] + "/overnight")
 
 import ovn_pi05 as ovn  # noqa: E402  (puts lair-openpi on sys.path, disables websocket keepalive)
 import openpi.models.pi0_config as pi0_config  # noqa: E402
@@ -27,7 +27,7 @@ import openpi.training.config as C  # noqa: E402
 import openpi.training.optimizer as _optimizer  # noqa: E402
 
 NAME = "pi05_ocbs3k"
-RUNS = "/scratch/aap9348/rlft-bench/runs/ladder"
+RUNS = os.environ["RLFT_ROOT"] + "/runs/ladder"
 STEPS = int(os.environ.get("LDR_STEPS", 30000))
 H = 30
 

@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=1G
 #SBATCH --time=00:05:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
+#SBATCH --output=logs/%x-%j.out
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 echo "watchdog $(date -Is): stopping pi0.5 training jobs $JOBS"
 for j in $JOBS; do squeue -j $j -h -o "%i %T"; scancel $j; done

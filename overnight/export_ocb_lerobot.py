@@ -5,6 +5,8 @@ Shared-recipe format (matches local/libero90_stack): 200 successful demos, two v
 opening) at every image step (interval 5 -> 10 fps). Training turns arm targets into deltas from state[:6].
 """
 
+import os
+
 import glob
 import json
 import pathlib
@@ -23,9 +25,9 @@ TASK = "block-double-task2"
 PROMPT = "stack the two cubes"
 NUM = 200
 CAMS = {"front": 0, "wrist": 2}
-ROOT = pathlib.Path("/scratch/aap9348/rlft-bench/cache/huggingface/lerobot/local/ocb_stack")
+ROOT = pathlib.Path(os.environ["RLFT_ROOT"] + "/cache/huggingface/lerobot/local/ocb_stack")
 
-paths = sorted(glob.glob(f"/scratch/aap9348/rlft-bench/data/ocbench/regen/visual-{TASK}-v0/i5/train-p*.npz"))
+paths = sorted(glob.glob(os.environ["RLFT_ROOT"] + f"/data/ocbench/regen/visual-{TASK}-v0/i5/train-p*.npz"))
 paths = [p for p in paths if not p.endswith("-val.npz")]
 assert paths, "no regenerated parts found"
 print("parts:", paths, flush=True)

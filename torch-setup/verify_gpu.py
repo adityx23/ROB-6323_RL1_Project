@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 
-repo = Path('/scratch/aap9348/rlft-bench')
+repo = Path(os.environ['RLFT_ROOT'])
 job_id = os.environ['SLURM_JOB_ID']
 root = repo / 'runs' / 'verification' / ('gpu-' + job_id)
 root.mkdir(parents=True, exist_ok=False)
@@ -59,7 +59,7 @@ spike, _ = json.JSONDecoder().raw_decode(spike_log[start + 1:] if start >= 0 els
 assert spike['jax_matmul_ok'] and spike['torch_cuda']
 assert spike['state_steps_per_s'] > 0 and spike['render_ms_per_world_3cams'] > 0
 assert spike['image_stats']['mean'] > 0
-run('generate-data', ['/home/aap9348/rlft-bench-torch/generate_verification_data.py', env['RLFT_DATA']], 900)
+run('generate-data', [os.environ['PROJ'] + '/torch-setup/generate_verification_data.py', env['RLFT_DATA']], 900)
 common = ['-m', 'pytest', '-q', '-rA', '-o', 'cache_dir=' + str(root / 'pytest-cache')]
 run('units', common + ['--basetemp=' + str(root / 'units-tmp'), 'tests', '--ignore=tests/smoke'], 1200)
 # Exclude the deliberate preemption test: it asks SLURM to requeue the job.

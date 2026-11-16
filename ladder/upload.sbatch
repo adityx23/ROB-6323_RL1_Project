@@ -6,11 +6,12 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
 #SBATCH --time=24:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
-export HF_TOKEN=$(cat /home/aap9348/.config/ldr-hf/token) HF_HUB_OFFLINE=0
-export HF_HOME=/scratch/aap9348/rlft-bench/cache/hf-upload HF_HUB_ENABLE_HF_TRANSFER=0
+export HF_TOKEN=$(cat ${HF_TOKEN_FILE:-$HOME/.config/ldr-hf/token}) HF_HUB_OFFLINE=0
+export HF_HOME=$RLFT_ROOT/cache/hf-upload HF_HUB_ENABLE_HF_TRANSFER=0
 echo "start=$(date -Is) host=$(hostname)"
-/scratch/aap9348/rlft-bench/.venv/bin/python -I /home/aap9348/rlft-bench-torch/ladder/upload_hf.py "$@"
+$RLFT_ROOT/.venv/bin/python -I $PROJ/ladder/upload_hf.py "$@"
 echo "end=$(date -Is)"

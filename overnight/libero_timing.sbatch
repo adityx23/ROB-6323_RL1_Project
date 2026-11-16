@@ -6,8 +6,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=a100|h100
 #SBATCH --time=00:20:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-source /home/aap9348/rlft-bench-torch/overnight/env.sh
+#SBATCH --output=logs/%x-%j.out
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
+source $PROJ/overnight/env.sh
 export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMBA_NUM_THREADS=1
 cd /tmp; echo "host=$(hostname) $(date -Is)"; df -h /tmp | tail -1
 PYTHONPATH=$LIBERO_SRC $LIBERO_PY $OVN/libero_timing.py soft 2>&1 | grep -E '^(import|soft|hard|reset|100)|Error'

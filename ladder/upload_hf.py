@@ -12,9 +12,9 @@ import os
 import pathlib
 import shutil
 
-CK = pathlib.Path("/scratch/aap9348/rlft-bench/runs/ladder/checkpoints/pi05_ocbs3k/run")
-STAGE = pathlib.Path("/scratch/aap9348/rlft-bench/runs/ladder/hf_stage")
-STEPS = open("/home/aap9348/rlft-bench-torch/ladder/ladder_steps.txt").read().split()
+CK = pathlib.Path(os.environ["RLFT_ROOT"] + "/runs/ladder/checkpoints/pi05_ocbs3k/run")
+STAGE = pathlib.Path(os.environ["RLFT_ROOT"] + "/runs/ladder/hf_stage")
+STEPS = open(os.environ["PROJ"] + "/ladder/ladder_steps.txt").read().split()
 
 README = """---
 license: gemma

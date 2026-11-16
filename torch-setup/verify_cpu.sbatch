@@ -6,9 +6,10 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=12G
 #SBATCH --time=00:30:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
 
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 printf 'job_id=%s\njob_name=%s\naccount=%s\nhost=%s\nnodes=%s\nstart=%s\nworking_directory=%s\n' \
@@ -23,7 +24,7 @@ myquota
 export JAX_PLATFORMS=cpu CUDA_VISIBLE_DEVICES= WANDB_MODE=disabled
 export PYTHONUNBUFFERED=1 HYDRA_FULL_ERROR=1
 printf '%s\n' 'inputs=synthetic toy demonstrations; seed=0; no external data' \
-  'output=/scratch/aap9348/rlft-bench/runs/verification/cpu-JOBID' \
-  'command=bash /home/aap9348/rlft-bench-torch/run.sh python /home/aap9348/rlft-bench-torch/verify_cpu.py'
-bash /home/aap9348/rlft-bench-torch/run.sh python /home/aap9348/rlft-bench-torch/verify_cpu.py
+  'output=$RLFT_ROOT/runs/verification/cpu-JOBID' \
+  'command=bash $PROJ/torch-setup/run.sh python $PROJ/torch-setup/verify_cpu.py'
+bash $PROJ/torch-setup/run.sh python $PROJ/torch-setup/verify_cpu.py
 printf 'end=%s\n' "$(date --iso-8601=seconds)"

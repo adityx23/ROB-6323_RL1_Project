@@ -15,12 +15,13 @@
 #SBATCH --signal=B:USR1@600
 #SBATCH --requeue
 #SBATCH --open-mode=append
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
 
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
-test "$PWD" = /scratch/aap9348/rlft-bench
+test "$PWD" = $RLFT_ROOT
 : "${NDEMOS:?pass NDEMOS via --export}" "${STEPS:?pass STEPS via --export}"
 SEED=${SEED:-0}
 name=base_block-single-task1_visual_abs-chunk_H25_n${NDEMOS}_$((STEPS / 1000))k
@@ -36,7 +37,7 @@ export PYTHONUNBUFFERED=1 HYDRA_FULL_ERROR=1 WANDB_MODE=offline
 signal_tree() { local p; for p in $(ps -o pid= --ppid "$1"); do signal_tree "$p"; kill -USR1 "$p" 2>/dev/null || true; done; }
 trap 'echo "USR1 at $(date --iso-8601=seconds): asking training to checkpoint"; signal_tree $child' USR1
 
-bash /home/aap9348/rlft-bench-torch/run.sh python scripts/train_base.py \
+bash $PROJ/torch-setup/run.sh python scripts/train_base.py \
   env=ocb_block_single obs=visual action.space=abs action.abs_frame=chunk action.H=25 action.C=25 \
   data.num_demos="$NDEMOS" train.steps="$STEPS" train.eval_every=10000 env.eval_envs=128 \
   "train.ckpt_steps=[10000,25000,50000,100000]" seed="$SEED" name="$name" &

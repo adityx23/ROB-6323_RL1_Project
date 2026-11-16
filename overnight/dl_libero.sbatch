@@ -5,10 +5,11 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=03:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -uo pipefail
-R=/scratch/aap9348/rlft-bench
+R=$RLFT_ROOT
 export HF_HOME=$R/cache/huggingface HF_LEROBOT_HOME=$R/cache/huggingface/lerobot
 for f in ~/.cache/huggingface/token ~/.hf_token; do [ -s $f ] && export HF_TOKEN=$(tr -d "[:space:]" < $f) && echo "using token from $f" && break; done
 for i in $(seq 1 30); do

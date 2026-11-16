@@ -6,6 +6,8 @@ action (7, LIBERO delta EEF + gripper). fps 20 (LIBERO control rate). No-op step
 gripper) are dropped, as in the OpenVLA/openpi LIBERO data.
 """
 
+import os
+
 import glob
 import json
 import pathlib
@@ -15,8 +17,8 @@ import h5py
 import numpy as np
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
 
-RAW = "/scratch/aap9348/rlft-bench/data/libero90_raw/libero_90"
-ROOT = pathlib.Path("/scratch/aap9348/rlft-bench/cache/huggingface/lerobot/local/libero90_stack")
+RAW = os.environ["RLFT_ROOT"] + "/data/libero90_raw/libero_90"
+ROOT = pathlib.Path(os.environ["RLFT_ROOT"] + "/cache/huggingface/lerobot/local/libero90_stack")
 TASK_IDS = {"KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle": 16,
             "KITCHEN_SCENE2_stack_the_middle_black_bowl_on_the_back_black_bowl": 17,
             "LIVING_ROOM_SCENE4_stack_the_left_bowl_on_the_right_bowl_and_place_them_in_the_tray": 63,

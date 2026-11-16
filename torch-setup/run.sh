@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Run inside an existing, approved compute allocation; does not allocate resources.
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
 case $(hostname) in torch-login-*) echo 'Run workloads in an approved compute allocation' >&2; exit 1;; esac
 : "${SLURM_JOB_ID:?Compute allocation required}"
@@ -7,7 +8,7 @@ test "${SLURMD_NODENAME:-}" = "$(hostname -s)" || {
   echo 'Hostname does not match the allocated SLURM node; stop for inspection' >&2; exit 1;
 }
 test "$#" -gt 0 || { echo 'Usage: bash run.sh python SCRIPT [ARGS...]' >&2; exit 1; }
-export RLFT_ROOT=/scratch/aap9348/rlft-bench
+export RLFT_ROOT=$RLFT_ROOT
 cd "$RLFT_ROOT"
 export UV_PROJECT_ENVIRONMENT=$RLFT_ROOT/.venv
 export UV_CACHE_DIR=$RLFT_ROOT/cache/uv UV_PYTHON_INSTALL_DIR=$RLFT_ROOT/environments/python

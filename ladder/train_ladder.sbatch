@@ -11,18 +11,19 @@
 #SBATCH --gres=gpu:4
 #SBATCH --constraint=a100|h100
 #SBATCH --time=24:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
-source /home/aap9348/rlft-bench-torch/overnight/env.sh
-L=/home/aap9348/rlft-bench-torch/ladder
-CK=/scratch/aap9348/rlft-bench/runs/ladder/checkpoints/pi05_ocbs3k/run
+source $PROJ/overnight/env.sh
+L=$PROJ/ladder
+CK=$RLFT_ROOT/runs/ladder/checkpoints/pi05_ocbs3k/run
 echo "start=$(date -Is) host=$(hostname) job=$SLURM_JOB_ID gpus=$CUDA_VISIBLE_DEVICES"
 nvidia-smi --query-gpu=name,memory.total --format=csv
 mkdir -p $CK
-bash $L/prune_ckpts.sh $CK loop >> /scratch/aap9348/rlft-bench/logs/ldr-prune.log 2>&1 &
+bash $L/prune_ckpts.sh $CK loop >> $RLFT_ROOT/logs/ldr-prune.log 2>&1 &
 RES=""; ls $CK 2>/dev/null | grep -qE '^[0-9]+$' && RES=--resume
 cd $L
 $PY pi05_ladder.py train $RES
-sleep 150; bash $L/prune_ckpts.sh $CK >> /scratch/aap9348/rlft-bench/logs/ldr-prune.log 2>&1
+sleep 150; bash $L/prune_ckpts.sh $CK >> $RLFT_ROOT/logs/ldr-prune.log 2>&1
 echo "end=$(date -Is)"

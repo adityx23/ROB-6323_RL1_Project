@@ -13,12 +13,13 @@
 #SBATCH --signal=B:USR1@600
 #SBATCH --requeue
 #SBATCH --open-mode=append
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
 
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
-test "$PWD" = /scratch/aap9348/rlft-bench
+test "$PWD" = $RLFT_ROOT
 : "${BASE:?pass BASE via --export}" "${METHOD:?pass METHOD via --export}"
 test -d "$BASE/policy" || { echo "Base run has no policy/: $BASE" >&2; exit 1; }
 SEED=${SEED:-0}
@@ -36,7 +37,7 @@ signal_tree() { local p; for p in $(ps -o pid= --ppid "$1"); do signal_tree "$p"
 trap 'echo "USR1 at $(date --iso-8601=seconds): asking training to checkpoint"; signal_tree $child' USR1
 
 # shellcheck disable=SC2086  # EXTRA is a space-separated list of Hydra overrides
-bash /home/aap9348/rlft-bench-torch/run.sh python scripts/train_rl.py \
+bash $PROJ/torch-setup/run.sh python scripts/train_rl.py \
   env=ocb_block_single obs=visual action.space=abs action.abs_frame=chunk action.H=25 action.C=25 \
   base.run="$BASE" method="$METHOD" seed="$SEED" name="$name" ${EXTRA:-} &
 child=$!

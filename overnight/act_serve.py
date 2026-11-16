@@ -8,6 +8,8 @@ Observation keys sent by the eval clients:
 Returns {"actions": (chunk, action_dim)} un-normalized.
 """
 
+import os
+
 import json
 import pathlib
 import sys
@@ -15,7 +17,7 @@ import sys
 import numpy as np
 import torch
 
-sys.path.insert(0, "/scratch/aap9348/lair-openpi/src")
+sys.path.insert(0, os.environ["LAIR_OPENPI"] + "/src")
 from lerobot.common.policies.act.modeling_act import ACTPolicy  # noqa: E402
 from openpi.serving import websocket_policy_server  # noqa: E402
 import functools as _ft  # noqa: E402

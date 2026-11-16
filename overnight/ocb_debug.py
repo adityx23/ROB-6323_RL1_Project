@@ -5,6 +5,8 @@ B. Inputs: eval-rendered images/proprio at reset vs dataset episode starts (side
 C. Closed loop: 4 worlds, 600 control steps with ACT; log commanded target - q and achieved motion.
 """
 
+import os
+
 import json
 import pathlib
 import sys
@@ -35,7 +37,7 @@ def u8(img_chw):
     return (img_chw.permute(1, 2, 0).numpy() * 255).round().astype(np.uint8)
 
 
-srv = ActServer("/scratch/aap9348/rlft-bench/runs/overnight/act_ocbs")
+srv = ActServer(os.environ["RLFT_ROOT"] + "/runs/overnight/act_ocbs")
 ds = LeRobotDataset("local/ocb_stack", delta_timestamps={"action": [i / 10 for i in range(10)]})
 log("dataset frames", len(ds), "episodes", ds.num_episodes)
 

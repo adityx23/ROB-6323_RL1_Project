@@ -6,12 +6,13 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=a100|h100
 #SBATCH --time=00:40:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -uo pipefail
-cd /scratch/aap9348/rlft-bench
+cd $RLFT_ROOT
 echo "start=$(date -Is) host=$(hostname)"
-bash /home/aap9348/rlft-bench-torch/run.sh python -X faulthandler scripts/gen_data.py regen --task block-double-task2 --visual \
-  --episodes 4 --interval 5 --max-parallel 4 --seed 99 --name dbg --root /scratch/aap9348/rlft-bench/data/ocbench 2>&1
+bash $PROJ/torch-setup/run.sh python -X faulthandler scripts/gen_data.py regen --task block-double-task2 --visual \
+  --episodes 4 --interval 5 --max-parallel 4 --seed 99 --name dbg --root $RLFT_ROOT/data/ocbench 2>&1
 echo "exit=$? end=$(date -Is)"
 ls -la data/ocbench/regen/*/i5/ 2>&1

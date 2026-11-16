@@ -6,8 +6,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=a100|h100
 #SBATCH --time=00:40:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
-source /home/aap9348/rlft-bench-torch/overnight/env.sh
-cd /scratch/aap9348/rlft-bench
-OMP_NUM_THREADS=1 PYTHONPATH=/scratch/aap9348/rlft-bench $PY $OVN/ocb_replay.py 2>&1 | grep -vE 'Warning|solver iterations|warn_overflow|Module .* load'
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
+source $PROJ/overnight/env.sh
+cd $RLFT_ROOT
+OMP_NUM_THREADS=1 PYTHONPATH=$RLFT_ROOT $PY $OVN/ocb_replay.py 2>&1 | grep -vE 'Warning|solver iterations|warn_overflow|Module .* load'

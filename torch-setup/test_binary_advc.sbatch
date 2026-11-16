@@ -12,12 +12,13 @@
 #SBATCH --mem=16G
 #SBATCH --gres=gpu:l40s:1
 #SBATCH --time=01:30:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
 
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
-test "$PWD" = /scratch/aap9348/rlft-bench
+test "$PWD" = $RLFT_ROOT
 test "$(git rev-parse --abbrev-ref HEAD)" = binary-advc
 printf 'job_id=%s host=%s start=%s\n' "$SLURM_JOB_ID" "$(hostname)" "$(date --iso-8601=seconds)"
 module load anaconda3/2025.06
@@ -25,9 +26,9 @@ nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv
 git status --short
 unset JAX_PLATFORMS
 export PYTHONUNBUFFERED=1 HYDRA_FULL_ERROR=1 WANDB_MODE=disabled HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1
-out=/scratch/aap9348/rlft-bench/runs/verification/advc-$SLURM_JOB_ID
+out=$RLFT_ROOT/runs/verification/advc-$SLURM_JOB_ID
 mkdir -p "$out"
-run=/home/aap9348/rlft-bench-torch/run.sh
+run=$PROJ/torch-setup/run.sh
 py() { bash $run env -u SLURM_JOB_ID python "$@"; }
 common=(-m pytest -q -rA -o "cache_dir=$out/pytest-cache")
 

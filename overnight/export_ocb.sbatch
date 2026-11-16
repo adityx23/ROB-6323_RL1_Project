@@ -6,8 +6,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=a100|h100
 #SBATCH --time=01:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
-cd /scratch/aap9348/rlft-bench
-bash /home/aap9348/rlft-bench-torch/run.sh python /home/aap9348/rlft-bench-torch/overnight/export_ocb_lerobot.py
+cd $RLFT_ROOT
+bash $PROJ/torch-setup/run.sh python $PROJ/overnight/export_ocb_lerobot.py

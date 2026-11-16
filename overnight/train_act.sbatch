@@ -9,10 +9,11 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=a100|h100
 #SBATCH --time=08:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
-source /home/aap9348/rlft-bench-torch/overnight/env.sh
+source $PROJ/overnight/env.sh
 echo "start=$(date -Is) host=$(hostname) job=$SLURM_JOB_ID bench=$BENCH"
 cd $OVN
 $PY act_train.py --bench $BENCH --out $RUNS/act_$BENCH --max-hours ${MAX_HOURS:-7.0}

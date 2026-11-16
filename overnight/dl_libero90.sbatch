@@ -5,17 +5,18 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=01:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -uo pipefail
-R=/scratch/aap9348/rlft-bench
+R=$RLFT_ROOT
 export HF_HOME=$R/cache/huggingface
 for i in $(seq 1 20); do
   $R/.venv/bin/python - <<'E' && { echo "L90 DONE"; break; }
 from huggingface_hub import snapshot_download
 snapshot_download("yifengzhu-hf/LIBERO-datasets", repo_type="dataset", allow_patterns=["libero_90/*stack*"],
-                  local_dir="/scratch/aap9348/rlft-bench/data/libero90_raw", max_workers=4)
+                  local_dir="$RLFT_ROOT/data/libero90_raw", max_workers=4)
 E
   echo "attempt $i failed $(date -Is)"; sleep $((30*i))
 done
-ls -la /scratch/aap9348/rlft-bench/data/libero90_raw/libero_90
+ls -la $RLFT_ROOT/data/libero90_raw/libero_90

@@ -9,10 +9,11 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=a100|h100
 #SBATCH --time=02:30:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -uo pipefail
-source /home/aap9348/rlft-bench-torch/overnight/env.sh
+source $PROJ/overnight/env.sh
 OUT=${OUT:-$RUNS/eval}; mkdir -p $OUT/logs
 CT="env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMBA_NUM_THREADS=1"
 echo "start=$(date -Is) host=$(hostname) job=$SLURM_JOB_ID policy=$POLICY bench=$BENCH"
@@ -39,7 +40,7 @@ if [ $BENCH = l90 ]; then   # 4 LIBERO-90 stacking tasks x 50 episodes, one clie
   done
 else                        # OCBench stacking: 200 seeded episodes, 4 clients x 50
   for k in 0 1 2 3; do
-    (cd /scratch/aap9348/rlft-bench && $CT $PY $OVN/ocb_eval.py --policy $POLICY --port 8000 --episodes 50 \
+    (cd $RLFT_ROOT && $CT $PY $OVN/ocb_eval.py --policy $POLICY --port 8000 --episodes 50 \
       --seed $((12345 + 50*k)) --replan-rows 5 --out $OUT) > $OUT/logs/client-$POLICY-ocbs-$k-$SLURM_JOB_ID.log 2>&1 &
     CP+=($!)
   done

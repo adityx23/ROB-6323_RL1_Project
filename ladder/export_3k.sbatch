@@ -11,13 +11,14 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=128G
 #SBATCH --time=24:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -euo pipefail
-export HF_HUB_OFFLINE=1 HF_LEROBOT_HOME=/scratch/aap9348/rlft-bench/cache/huggingface/lerobot
-E=/home/aap9348/rlft-bench-torch/ladder/export_3k.py
+export HF_HUB_OFFLINE=1 HF_LEROBOT_HOME=$RLFT_ROOT/cache/huggingface/lerobot
+E=$PROJ/ladder/export_3k.py
 echo "start=$(date -Is) host=$(hostname) job=$SLURM_JOB_ID"
-bash /home/aap9348/rlft-bench-torch/run.sh python $E check --episodes 3
+bash $PROJ/torch-setup/run.sh python $E check --episodes 3
 echo "check passed $(date -Is)"
-bash /home/aap9348/rlft-bench-torch/run.sh python $E export --num ${NUM:-3000}
+bash $PROJ/torch-setup/run.sh python $E export --num ${NUM:-3000}
 echo "end=$(date -Is)"

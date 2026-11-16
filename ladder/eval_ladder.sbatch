@@ -10,14 +10,15 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=a100|h100
 #SBATCH --time=02:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%A_%a.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%A_%a.err
+#SBATCH --output=logs/%x-%A_%a.out
+#SBATCH --error=logs/%x-%A_%a.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -uo pipefail
-source /home/aap9348/rlft-bench-torch/overnight/env.sh
-L=/home/aap9348/rlft-bench-torch/ladder
+source $PROJ/overnight/env.sh
+L=$PROJ/ladder
 STEPS=($(cat $L/ladder_steps.txt)); STEP=${STEP:-${STEPS[$SLURM_ARRAY_TASK_ID]}}
-CK=/scratch/aap9348/rlft-bench/runs/ladder/checkpoints/pi05_ocbs3k/run/$STEP
-OUT=/scratch/aap9348/rlft-bench/runs/ladder/eval; mkdir -p $OUT/logs
+CK=$RLFT_ROOT/runs/ladder/checkpoints/pi05_ocbs3k/run/$STEP
+OUT=$RLFT_ROOT/runs/ladder/eval; mkdir -p $OUT/logs
 POL=pi05_s$STEP; JID=${SLURM_ARRAY_JOB_ID:-$SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID:-0}
 CT="env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMBA_NUM_THREADS=1"
 echo "start=$(date -Is) host=$(hostname) job=$JID step=$STEP ckpt=$CK"
@@ -31,7 +32,7 @@ for i in $(seq 1 360); do $PY -c "import socket;socket.create_connection(('127.0
 echo "server up $(date -Is)"
 CP=()
 for k in 0 1 2 3; do
-  (cd /scratch/aap9348/rlft-bench && $CT $PY /home/aap9348/rlft-bench-torch/overnight/ocb_eval.py --policy $POL --port $PORT \
+  (cd $RLFT_ROOT && $CT $PY $PROJ/overnight/ocb_eval.py --policy $POL --port $PORT \
     --episodes 50 --seed $((12345 + 50*k)) --replan-rows 5 --out $OUT) > $OUT/logs/client-$POL-$k-$JID.log 2>&1 &
   CP+=($!)
 done

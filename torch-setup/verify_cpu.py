@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-repo = Path('/scratch/aap9348/rlft-bench')
+repo = Path(os.environ['RLFT_ROOT'])
 root = repo / 'runs' / 'verification' / ('cpu-' + os.environ['SLURM_JOB_ID'])
 root.mkdir(parents=True, exist_ok=False)
 

@@ -3,7 +3,7 @@
 Same frame format as overnight/export_ocb_lerobot.py (local/ocb_stack): front + wrist resized to 128x128 (INTER_AREA),
 observation.state = 19-d proprio, action = absolute joint targets (6 arm + gripper) at every image step (10 fps).
 Differences: one part file in memory at a time (the old exporter held every part, ~460 GB for 3k demos), and no
-GPU sim: the JointSpace comes from OCB_JOINT_SCALE + the arm ctrlrange saved in ocb_stack/ocb_meta.json.
+GPU sim: the JointSpace comes from OCB_JOINT_SCALE + the arm ctrlrange constants below.
 
     python export_3k.py export [--num 3000] [--repo local/ocb_stack_3k]
     python export_3k.py check  [--episodes 3]   # re-derive ocb_stack's first episodes, compare to the saved ones
@@ -33,10 +33,13 @@ from rlft_bench.data.ocb_import import load_ocb  # noqa: E402
 TASK = "block-double-task2"
 PROMPT = "stack the two cubes"
 CAMS = {"front": 0, "wrist": 2}
-LEROBOT = pathlib.Path("/scratch/aap9348/rlft-bench/cache/huggingface/lerobot")
-PARTS_GLOB = f"/scratch/aap9348/rlft-bench/data/ocbench/regen/visual-{TASK}-v0/i5/train-p*.npz"
-OLD_META = json.load(open(LEROBOT / "local/ocb_stack/ocb_meta.json"))
-JS = JointSpace(scale=OCB_JOINT_SCALE.copy(), arm_low=np.array(OLD_META["arm_low"]), arm_high=np.array(OLD_META["arm_high"]))
+LEROBOT = pathlib.Path(os.environ["RLFT_ROOT"] + "/cache/huggingface/lerobot")
+PARTS_GLOB = os.environ["RLFT_ROOT"] + f"/data/ocbench/regen/visual-{TASK}-v0/i5/train-p*.npz"
+# UR5e arm ctrlrange of block-double-task2 (env._arm_ctrlrange), as saved by the GPU-sim exporter in
+# local/ocb_stack/ocb_meta.json; `check` compares against that export when it exists.
+ARM_LOW = np.array([-6.2831, -6.2831, -3.1415, -6.2831, -6.2831, -6.2831])
+ARM_HIGH = -ARM_LOW
+JS = JointSpace(scale=OCB_JOINT_SCALE.copy(), arm_low=ARM_LOW, arm_high=ARM_HIGH)
 
 
 def parts():
@@ -102,6 +105,8 @@ def export(num: int, repo: str):
 
 def check(n: int):
     """Regression check against local/ocb_stack (made by the GPU-sim exporter from the same first part)."""
+    meta = json.load(open(LEROBOT / "local/ocb_stack/ocb_meta.json"))
+    assert np.allclose(meta["arm_low"], ARM_LOW) and np.allclose(meta["arm_high"], ARM_HIGH), "arm range changed"
     from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
 
     old = LeRobotDataset("local/ocb_stack", root=LEROBOT / "local/ocb_stack")

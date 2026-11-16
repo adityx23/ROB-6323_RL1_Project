@@ -8,10 +8,11 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=2G
 #SBATCH --time=2-00:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
+#SBATCH --output=logs/%x-%j.out
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -o pipefail
-TRAIN=$1; L=/home/aap9348/rlft-bench-torch/ladder
-CK=/scratch/aap9348/rlft-bench/runs/ladder/checkpoints/pi05_ocbs3k/run
+TRAIN=$1; L=$PROJ/ladder
+CK=$RLFT_ROOT/runs/ladder/checkpoints/pi05_ocbs3k/run
 declare -A DONE=()
 while true; do
   st=$(sacct -n -X -j $TRAIN --format=State%40 | head -1 | tr -d ' ')

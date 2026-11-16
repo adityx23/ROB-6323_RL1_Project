@@ -8,15 +8,16 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=03:00:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%j.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%j.err
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
 
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -uo pipefail
-R=/scratch/aap9348/rlft-bench
-LO=/scratch/aap9348/lair-openpi
+R=$RLFT_ROOT
+LO=$LAIR_OPENPI
 PY=$R/.venv/bin/python
 export HF_HOME=$R/cache/huggingface HF_LEROBOT_HOME=$R/cache/huggingface/lerobot
-export OPENPI_DATA_HOME=/scratch/aap9348/openpi/cache
+export OPENPI_DATA_HOME=$RLFT_ROOT/cache/openpi
 export UV_CACHE_DIR=$R/cache/uv UV_PYTHON_INSTALL_DIR=$R/environments/python TMPDIR=$R/tmp
 export PATH=$R/environments/uv-0.9.5/bin:$PATH HF_HUB_ENABLE_HF_TRANSFER=0
 echo "start=$(date -Is) host=$(hostname) job=$SLURM_JOB_ID"
@@ -38,7 +39,8 @@ E
   git submodule update --init --depth 1 third_party/libero
   V=$R/environments/libero-venv
   [ -x $V/bin/python ] || uv venv --python 3.8 $V
-  uv pip install --python $V/bin/python -r examples/libero/requirements.txt -r third_party/libero/requirements.txt \
+  # exact versions of the venv our LIBERO evals ran in (was: -r examples/libero/requirements.txt -r third_party/libero/requirements.txt)
+  uv pip install --python $V/bin/python -r $PROJ/overnight/libero_requirements.lock \
       --extra-index-url https://download.pytorch.org/whl/cu113 --index-strategy=unsafe-best-match
   uv pip install --python $V/bin/python -e packages/openpi-client -e third_party/libero
   MUJOCO_GL=egl PYTHONPATH=$LO/third_party/libero $V/bin/python -c "from libero.libero import benchmark; print(list(benchmark.get_benchmark_dict()))"

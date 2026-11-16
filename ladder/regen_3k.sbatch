@@ -12,12 +12,13 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=a100|h100
 #SBATCH --time=02:30:00
-#SBATCH --output=/scratch/aap9348/rlft-bench/logs/%x-%A_%a.out
-#SBATCH --error=/scratch/aap9348/rlft-bench/logs/%x-%A_%a.err
+#SBATCH --output=logs/%x-%A_%a.out
+#SBATCH --error=logs/%x-%A_%a.err
+: "${PROJ:?submit with ./submit.sh (or source config.sh first)}"
 set -uo pipefail
-cd /scratch/aap9348/rlft-bench
-run=/home/aap9348/rlft-bench-torch/run.sh
-OUT=/scratch/aap9348/rlft-bench/data/ocbench/regen/visual-block-double-task2-v0/i5
+cd $RLFT_ROOT
+run=$PROJ/torch-setup/run.sh
+OUT=$RLFT_ROOT/data/ocbench/regen/visual-block-double-task2-v0/i5
 echo "start=$(date -Is) host=$(hostname) job=${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
 export SLURM_CPUS_PER_TASK=8
 P=()
@@ -26,7 +27,7 @@ for k in 0 1; do
   name=$(printf 'train-p%03d' $p)
   if [ -f "$OUT/$name.npz" ]; then echo "$name exists, skipping"; continue; fi
   bash $run python -X faulthandler scripts/gen_data.py regen --task block-double-task2 --visual --episodes ${EPS:-110} \
-      --interval 5 --max-parallel ${MAXPAR:-55} --seed $((p + 1)) --name $name --root /scratch/aap9348/rlft-bench/data/ocbench \
+      --interval 5 --max-parallel ${MAXPAR:-55} --seed $((p + 1)) --name $name --root $RLFT_ROOT/data/ocbench \
       > logs/ldr-regen-$name-${SLURM_ARRAY_JOB_ID}.log 2>&1 &
   P+=($!)
 done

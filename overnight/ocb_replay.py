@@ -4,6 +4,8 @@ initial qpos/qvel two ways and report success:
   hold5 : the stored LeRobot row target held for 5 control steps (what ocb_eval.py executes)
 """
 
+import os
+
 import glob
 
 import numpy as np
@@ -14,7 +16,7 @@ from rlft_bench.envs.ocbench_adapter import OCBenchAdapter
 
 TASK = "block-double-task2"
 N = 6
-paths = sorted(p for p in glob.glob(f"/scratch/aap9348/rlft-bench/data/ocbench/regen/visual-{TASK}-v0/i5/train-p000.npz"))
+paths = sorted(p for p in glob.glob(os.environ["RLFT_ROOT"] + f"/data/ocbench/regen/visual-{TASK}-v0/i5/train-p000.npz"))
 ep = load_ocb(paths, TASK, max_episodes=N + 4, successful_only=True)
 raw = np.load(paths[0], mmap_mode="r")
 term = np.where(raw["terminals"])[0]

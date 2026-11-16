@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 
-repo = Path('/scratch/aap9348/rlft-bench')
+repo = Path(os.environ['RLFT_ROOT'])
 reuse = Path(os.environ['RLFT_REUSE_DATA'])
 job_id = os.environ['SLURM_JOB_ID']
 root = repo / 'runs' / 'verification' / ('gpu-' + job_id)
