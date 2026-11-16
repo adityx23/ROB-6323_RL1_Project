@@ -1,0 +1,4 @@
+2026-11-14T14:30:05-05:00 regen retry 23145404 (tasks 2,4-8; first try segfaulted in EGL render on gh003; l40s)
+2026-11-14T15:52:52-05:00 export 23152732 (l40s, check then export 3000 -> local/ocb_stack_3k)
+2026-11-15T12:44:45-05:00 export 23251996 (cs CPU, glfw; previous GPU run 23152732 cancelled by root at 942/3000)
+2026-11-16T00:12:28-05:00 norm 23315456 ; smoke 23315457 (afterok norm) [H30 RTC bs128 EMA 4GPU]

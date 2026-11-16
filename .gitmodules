@@ -1,0 +1,8 @@
+[submodule "external/rlft-bench"]
+	path = external/rlft-bench
+	url = https://github.com/adityx23/rlft-bench.git
+	branch = binary-advc
+[submodule "external/lair-openpi"]
+	path = external/lair-openpi
+	url = https://github.com/adityx23/lair-openpi.git
+	branch = lair/main

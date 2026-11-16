@@ -1,0 +1,180 @@
+<title>Stacking Rollouts: ACT vs π0.5</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lab-notebook readout. Summary matrix first, per-task strip second, rollout grid last. */
+:root {
+  --bg: #f5f6f4; --panel: #ffffff; --ink: #1b1f1d; --muted: #5d6762; --line: #d9ddd9;
+  --accent: #2f5d8a; --ok: #2e7d4f; --ok-bg: #e3f1e8; --bad: #b0412f; --bad-bg: #f7e4e0;
+  --bar: #c9d3dc;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --panel: #1a1f1d; --ink: #e6ebe8; --muted: #98a39e; --line: #2c3330;
+  --accent: #7fb0dc; --ok: #6cc48f; --ok-bg: #1d3226; --bad: #ec8a78; --bad-bg: #3a221d; --bar: #34404a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121614; --panel: #1a1f1d; --ink: #e6ebe8; --muted: #98a39e; --line: #2c3330;
+  --accent: #7fb0dc; --ok: #6cc48f; --ok-bg: #1d3226; --bad: #ec8a78; --bad-bg: #3a221d; --bar: #34404a; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 36px; }
+h1 { font: 700 clamp(28px, 4vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em }
+h2 { font: 600 20px/1.2 var(--display); margin: 0 0 12px; text-wrap: balance }
+.lede { color: var(--muted); max-width: 68ch; margin: 8px 0 0 }
+.label { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted) }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel) }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap }
+th { font: 500 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted) }
+tr:last-child td { border-bottom: 0 }
+td.cell { min-width: 150px }
+.rate { font: 500 15px var(--mono) }
+.ci { font: 12px var(--mono); color: var(--muted); display: block }
+.meter { height: 6px; background: var(--bar); border-radius: 3px; margin-top: 6px; position: relative; overflow: hidden }
+.meter i { position: absolute; inset: 0 auto 0 0; background: var(--accent) }
+.meter b { position: absolute; top: 0; bottom: 0; background: var(--ink); opacity: .18 }
+.na { color: var(--muted); font: 13px var(--mono) }
+.tasks { display: grid; gap: 18px }
+.trow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 8px }
+.tcard { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; min-width: 0 }
+.tcard p { margin: 0 0 6px; font-size: 13px; line-height: 1.35; color: var(--ink) }
+.tvals { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 12px var(--mono); color: var(--muted) }
+.tvals span b { color: var(--ink); font-weight: 500 }
+.filters { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end }
+.filters label { display: grid; gap: 4px }
+select { font: 14px var(--body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink) }
+select:focus-visible, video:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.count { font: 12px var(--mono); color: var(--muted) }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px }
+figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 0 }
+video { display: block; width: 100%; aspect-ratio: 2 / 1; background: #000; max-width: 100% }
+figcaption { padding: 10px 12px; display: grid; gap: 6px }
+figcaption p { margin: 0; font-size: 13px; line-height: 1.35 }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 12px var(--mono); color: var(--muted) }
+.pill { font: 500 11px/1 var(--mono); padding: 4px 7px; border-radius: 999px; letter-spacing: .03em }
+.pill.ok { color: var(--ok); background: var(--ok-bg) }
+.pill.bad { color: var(--bad); background: var(--bad-bg) }
+.notes { color: var(--muted); font-size: 13px; max-width: 80ch; display: grid; gap: 4px }
+.notes p { margin: 0 }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="label">Overnight run · 2026-11-09</span>
+    <h1>Stacking Rollouts: ACT vs π0.5</h1>
+    <p class="lede">Success rates and rollout videos for ACT and π0.5, each trained with one shared recipe on two stacking tasks: four LIBERO-90 bowl-stacking tasks and OCBench two-cube stacking. Each video shows the third-person view next to the wrist view.</p>
+  </header>
+
+  <section>
+    <h2>Success rate</h2>
+    <div class="scroll"><table id="summary"></table></div>
+    <p class="count">Bar: success rate. Shaded band: 95% Wilson interval. n = evaluation episodes.</p>
+  </section>
+
+  <section>
+    <h2>Per task</h2>
+    <div class="tasks" id="tasks"></div>
+  </section>
+
+  <section>
+    <h2>Rollouts</h2>
+    <div class="filters">
+      <label for="f-policy"><span class="label">Policy</span><select id="f-policy"></select></label>
+      <label for="f-suite"><span class="label">Benchmark</span><select id="f-suite"></select></label>
+      <label for="f-outcome"><span class="label">Outcome</span>
+        <select id="f-outcome"><option value="">All</option><option value="s">Success</option><option value="f">Failure</option></select></label>
+      <span class="count" id="vcount"></span>
+    </div>
+    <div class="grid" id="grid" style="margin-top:14px"></div>
+  </section>
+
+  <footer class="notes" id="notes">
+    <p>Shared training recipe for all four runs: 200 demos per benchmark, two 128 px views (third-person + wrist), action chunks of 10 with 5 executed before replanning, batch 32, 15k steps, AdamW with 5e-5 peak learning rate, 500 warmup steps and cosine decay to 5e-6, gradient clip 1.0, no EMA. π0.5 starts from the pi05_base weights; ACT trains from scratch (ResNet-18 ImageNet backbone).</p>
+    <p>LIBERO-90: tasks 16, 17, 63, 64 (50 demos each), evaluated on LIBERO's 50 fixed initial states per task at 20 Hz. ACT gets the task as a one-hot input because it has no language input.</p>
+    <p>OCBench: block-double-task2 (stack two cubes), 200 regenerated demos with an image every 5 control steps; 200 seeded eval episodes. Arm actions are deltas from the joint positions at the start of each chunk for both models.</p>
+  </footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const PN = DATA.policy_names, SN = DATA.suite_names;
+const pname = p => PN[p] || p, sname = s => SN[s] || s;
+const COLS = ["l90_stack", "ocb_stack"];
+const COLNAME = {};
+const policies = [...new Set(DATA.summary.map(r => r.policy))].sort((a, b) => Object.keys(PN).indexOf(a) - Object.keys(PN).indexOf(b));
+const pct = x => (100 * x).toFixed(1) + "%";
+
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "class" ? e.className = v : e.setAttribute(k, v);
+  for (const c of kids) e.append(c);
+  return e;
+}
+
+(function summary() {
+  const t = document.getElementById("summary");
+  const cols = COLS.filter(c => DATA.summary.some(r => r.suite === c));
+  t.append(el("tr", {}, el("th", {}, "Policy"), ...cols.map(c => el("th", {}, COLNAME[c] || sname(c)))));
+  for (const p of policies) {
+    const tr = el("tr", {}, el("td", {}, pname(p)));
+    for (const c of cols) {
+      const r = DATA.summary.find(x => x.policy === p && x.suite === c);
+      if (!r) { tr.append(el("td", { class: "cell" }, el("span", { class: "na" }, "not run"))); continue; }
+      const m = el("div", { class: "meter" }, el("b"), el("i"));
+      m.querySelector("i").style.width = pct(r.rate);
+      const b = m.querySelector("b"); b.style.left = pct(r.lo); b.style.width = pct(r.hi - r.lo);
+      tr.append(el("td", { class: "cell" }, el("span", { class: "rate" }, pct(r.rate)),
+        el("span", { class: "ci" }, `${pct(r.lo)}–${pct(r.hi)} · n=${r.n}`), m));
+    }
+    t.append(tr);
+  }
+})();
+
+(function tasks() {
+  const root = document.getElementById("tasks");
+  const suites = [...new Set(DATA.tasks.map(r => r.suite))].sort((a, b) => COLS.indexOf(a) - COLS.indexOf(b));
+  for (const s of suites) {
+    const ids = [...new Set(DATA.tasks.filter(r => r.suite === s).map(r => r.task_id))].sort((a, b) => a - b);
+    const g = el("div", { class: "tgrid" });
+    for (const id of ids) {
+      const rows = DATA.tasks.filter(r => r.suite === s && r.task_id === id);
+      const vals = el("div", { class: "tvals" });
+      for (const p of policies) {
+        const r = rows.find(x => x.policy === p);
+        if (r) vals.append(el("span", {}, pname(p) + " ", el("b", {}, `${r.k}/${r.n}`)));
+      }
+      g.append(el("div", { class: "tcard" }, el("p", {}, rows[0].task), vals));
+    }
+    root.append(el("div", { class: "trow" }, el("span", { class: "label" }, sname(s)), g));
+  }
+})();
+
+(function gallery() {
+  const fp = document.getElementById("f-policy"), fs = document.getElementById("f-suite"), fo = document.getElementById("f-outcome");
+  fp.append(el("option", { value: "" }, "All"), ...policies.map(p => el("option", { value: p }, pname(p))));
+  const suites = [...new Set(DATA.videos.map(v => v.suite))].sort((a, b) => COLS.indexOf(a) - COLS.indexOf(b));
+  fs.append(el("option", { value: "" }, "All"), ...suites.map(s => el("option", { value: s }, sname(s))));
+  try { const saved = JSON.parse(localStorage.getItem("gallery-filters") || "{}");
+    if (saved.p) fp.value = saved.p; if (saved.s) fs.value = saved.s; if (saved.o) fo.value = saved.o; } catch (e) {}
+  const grid = document.getElementById("grid"), count = document.getElementById("vcount");
+  function render() {
+    try { localStorage.setItem("gallery-filters", JSON.stringify({ p: fp.value, s: fs.value, o: fo.value })); } catch (e) {}
+    const vs = DATA.videos.filter(v => (!fp.value || v.policy === fp.value) && (!fs.value || v.suite === fs.value) &&
+      (!fo.value || (fo.value === "s") === v.success));
+    grid.replaceChildren(...vs.map(v => el("figure", {},
+      el("video", { src: v.src, controls: "", muted: "", loop: "", playsinline: "", preload: "metadata" }),
+      el("figcaption", {}, el("p", {}, v.task),
+        el("div", { class: "meta" }, el("span", { class: "pill " + (v.success ? "ok" : "bad") }, v.success ? "success" : "failure"),
+          pname(v.policy), " · ", sname(v.suite), " · ep ", String(v.episode), " · ", `${v.steps} steps`)))));
+    count.textContent = `${vs.length} of ${DATA.videos.length} videos`;
+  }
+  [fp, fs, fo].forEach(s => s.addEventListener("change", render));
+  render();
+})();
+</script>

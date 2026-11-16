@@ -1,0 +1,25 @@
+dl_l90=22366647
+conv_l90=22366971
+regen_dbg=22366661
+regen_a=22367453
+regen_b=22367456
+export_ocb=22367462
+pi05_l90=22367488
+act_l90=22367489
+pi05_ocbs=22367490
+act_ocbs=22367491
+eval_act_ocbs=22370135
+eval_pi05_l90=22370136
+eval_pi05_ocbs=22370137
+watchdog_0700=22370138
+eval_act_l90=22370879
+gallery=22370880
+
+# retry 2026-11-09 (pi0.5 action-key fix)
+pi05_l90_v2=22421867
+pi05_ocbs_v2=22421869
+eval_pi05_l90_v2=22421874
+eval_pi05_ocbs_v2=22421876
+gallery_v2=22421878
+ocb_debug=22421910
+ocb_replay=22422301
