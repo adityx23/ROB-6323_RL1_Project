@@ -48,6 +48,7 @@ source config.sh
 ./submit.sh torch-setup/setup.sbatch            # uv 0.9.5 bootstrap -> Python 3.11 -> uv sync --frozen (~10 min)
 ./submit.sh torch-setup/prefetch_weights.sbatch # pi05_base params + PaliGemma tokenizer -> cache/openpi
 ./submit.sh overnight/setup_data.sbatch         # LIBERO venv (py3.8, pinned) + LIBERO dataset + pi05_libero ckpt
+                                                # (--export=ALL,ONLY_VENV=1 builds just the venv)
 bash torch-setup/check_env.sh                   # must print IDENTICAL for both venvs and the expected commits
 ```
 * `setup.sbatch` refuses to run if `.venv` already exists, if the checkouts are at different commits, or if

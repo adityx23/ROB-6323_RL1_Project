@@ -22,6 +22,7 @@ export UV_CACHE_DIR=$R/cache/uv UV_PYTHON_INSTALL_DIR=$R/environments/python TMP
 export PATH=$R/environments/uv-0.9.5/bin:$PATH HF_HUB_ENABLE_HF_TRANSFER=0
 echo "start=$(date -Is) host=$(hostname) job=$SLURM_JOB_ID"
 
+if [ "${ONLY_VENV:-0}" != 1 ]; then  # ONLY_VENV=1: just build the LIBERO venv
 ( $PY - <<'E'
 from huggingface_hub import snapshot_download
 import os
@@ -33,6 +34,7 @@ E
 
 ( $PY -c "from openpi.shared import download as d; print(d.maybe_download('gs://openpi-assets/checkpoints/pi05_libero'))" \
   && echo "PI05_LIBERO_CKPT DONE" || echo "PI05_LIBERO_CKPT FAILED" ) &
+fi
 
 ( set -e
   cd $LO
