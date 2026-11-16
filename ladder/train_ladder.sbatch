@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pi0.5 ladder on local/ocb_stack_3k (pi05_ladder.py: H=30, RTC, bs128, EMA, 30k steps), 4-GPU FSDP.
 # Checkpoints every 2500 steps; orbax keeps multiples of 5000; prune_ckpts.sh drops train_state from ladder steps.
-# Resubmitting resumes from the newest checkpoint.
+# Resubmitting resumes from the newest checkpoint; exits at once if the final checkpoint (29999) exists.
 #SBATCH --job-name=ldr-pi05
 #SBATCH --account=torch_pr_50_tandon_priority
 #SBATCH --nodes=1
@@ -21,6 +21,7 @@ CK=$RLFT_ROOT/runs/ladder/checkpoints/pi05_ocbs3k/run
 echo "start=$(date -Is) host=$(hostname) job=$SLURM_JOB_ID gpus=$CUDA_VISIBLE_DEVICES"
 nvidia-smi --query-gpu=name,memory.total --format=csv
 mkdir -p $CK
+if [ -d $CK/29999/params ]; then echo "final checkpoint 29999 exists: training already finished"; exit 0; fi
 bash $L/prune_ckpts.sh $CK loop >> $RLFT_ROOT/logs/ldr-prune.log 2>&1 &
 RES=""; ls $CK 2>/dev/null | grep -qE '^[0-9]+$' && RES=--resume
 cd $L
