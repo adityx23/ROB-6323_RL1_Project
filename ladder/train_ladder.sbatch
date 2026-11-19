@@ -2,6 +2,7 @@
 # pi0.5 ladder on local/ocb_stack_3k (pi05_ladder.py: H=30, RTC, bs128, EMA, 30k steps), 4-GPU FSDP.
 # Checkpoints every 2500 steps; orbax keeps multiples of 5000; prune_ckpts.sh drops train_state from ladder steps.
 # Resubmitting resumes from the newest checkpoint; exits at once if the final checkpoint (29999) exists.
+# On a crash it cancels the queued resume + upload jobs; on finishing it cancels the queued resume jobs.
 #SBATCH --job-name=ldr-pi05
 #SBATCH --account=torch_pr_50_tandon_priority
 #SBATCH --nodes=1
@@ -25,6 +26,17 @@ if [ -d $CK/29999/params ]; then echo "final checkpoint 29999 exists: training a
 bash $L/prune_ckpts.sh $CK loop >> $RLFT_ROOT/logs/ldr-prune.log 2>&1 &
 RES=""; ls $CK 2>/dev/null | grep -qE '^[0-9]+$' && RES=--resume
 cd $L
-$PY pi05_ladder.py train $RES
+# A Slurm time-limit stop sends SIGTERM: the trap marks it so the queued resume jobs are kept.
+TERMED=0; trap 'TERMED=1' TERM
+rc=0; $PY pi05_ladder.py train $RES || rc=$?
+if [ $rc -ne 0 ] && [ $TERMED -eq 0 ] && [ $SECONDS -lt 84600 ]; then
+  echo "training crashed (exit $rc): cancelling the queued resume + upload jobs"
+  squeue -u $USER -h -t PD -n ldr-pi05,ldr-upload -o %i | xargs -r scancel; exit $rc
+fi
+[ $rc -ne 0 ] && { echo "stopped by time limit (exit $rc); next resume job continues"; exit $rc; }
 sleep 150; bash $L/prune_ckpts.sh $CK >> $RLFT_ROOT/logs/ldr-prune.log 2>&1
+if [ -d $CK/29999 ]; then
+  echo "training finished: cancelling queued resume jobs so the upload starts"
+  squeue -u $USER -h -t PD -n ldr-pi05 -o %i | xargs -r scancel
+fi
 echo "end=$(date -Is)"
