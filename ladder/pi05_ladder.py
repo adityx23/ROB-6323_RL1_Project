@@ -2,13 +2,17 @@
 
 Transforms as the overnight pi05_ocbs run (overnight/ovn_pi05.py: front -> base view, wrist -> left wrist, right wrist
 masked; arm actions as deltas from the chunk-start joints, gripper absolute). Changed per user (2026-11-16):
-action chunk 30, train-time RTC (delay ~ U[0, 15)), batch 128, EMA 0.999, 30k steps, 4-GPU FSDP.
+action chunk 30, train-time RTC (delay ~ U[0, 15)), batch 128, EMA 0.999, 30k steps.
+Two compute profiles, picked with LDR_CLUSTER; model, data and optimization are identical on both:
+  hpc     (default) NYU Torch, 4x A100/H100 80 GB, 4-GPU FSDP, 32 per GPU   -> ladder/train_ladder.sbatch
+  maxwell           Maxwell, 8x RTX A6000 48 GB, 8-GPU FSDP, 16 per GPU    -> maxwell/train_ladder.sh
+LDR_FSDP / LDR_WORKERS override the profile.
 Checkpoints: saved every 2500 steps; orbax keeps multiples of 5000 (keep_period) plus the newest; prune_ckpts.sh
 drops train_state from the ladder steps (ladder_steps.txt: 5k 10k 15k 20k 25k 29999) except the newest.
 With EMA on, the saved `params` are the EMA weights.
 
     python pi05_ladder.py norm                    # compute + cache norm stats (CPU job)
-    python pi05_ladder.py train [--resume]        # LDR_EXP (default run), LDR_STEPS (default 30000)
+    python pi05_ladder.py train [--resume]        # LDR_EXP (default run), LDR_STEPS (default 30000), LDR_CLUSTER
     python pi05_ladder.py serve <ckpt_dir> [port]
     python pi05_ladder.py infer <ckpt_dir>        # load a checkpoint, run one inference with and without RTC prefix
 """
@@ -30,6 +34,11 @@ NAME = "pi05_ocbs3k"
 RUNS = os.environ["RLFT_ROOT"] + "/runs/ladder"
 STEPS = int(os.environ.get("LDR_STEPS", 30000))
 H = 30
+CLUSTERS = {
+    "hpc": dict(fsdp_devices=4, num_workers=16),      # NYU Torch: 4x A100/H100 80 GB
+    "maxwell": dict(fsdp_devices=8, num_workers=16),  # Maxwell: 8x RTX A6000 48 GB
+}
+CLUSTER = CLUSTERS[os.environ.get("LDR_CLUSTER", "hpc")]
 
 
 def get() -> C.TrainConfig:
@@ -40,7 +49,8 @@ def get() -> C.TrainConfig:
         model=pi0_config.Pi0Config(pi05=True, action_horizon=H, discrete_state_input=False,
                                    rtc_train_enabled=True, rtc_train_min_delay=0, rtc_train_max_delay=15),
         batch_size=128, num_train_steps=STEPS, ema_decay=0.999,
-        fsdp_devices=int(os.environ.get("LDR_FSDP", 4)), num_workers=int(os.environ.get("LDR_WORKERS", 16)),
+        fsdp_devices=int(os.environ.get("LDR_FSDP", CLUSTER["fsdp_devices"])),
+        num_workers=int(os.environ.get("LDR_WORKERS", CLUSTER["num_workers"])),
         optimizer=_optimizer.AdamW(clip_gradient_norm=1.0),
         lr_schedule=_optimizer.CosineDecaySchedule(warmup_steps=min(500, STEPS // 10), peak_lr=5e-5, decay_steps=STEPS, decay_lr=5e-6),
         save_interval=int(os.environ.get("LDR_SAVE", 2500)), keep_period=int(os.environ.get("LDR_KEEP", 5000)),

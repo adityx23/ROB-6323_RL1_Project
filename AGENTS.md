@@ -10,6 +10,7 @@ ROB-6323_RL1_Project/          this repo (job scripts, configs, notes); clone it
   config.sh                    PROJ, RLFT_ROOT, LAIR_OPENPI, pinned commits, ACCOUNT  (source it first)
   submit.sh                    submit any job script the way we did (from RLFT_ROOT, env exported)
   torch-setup/  overnight/  ladder/
+  maxwell/                     setup + training on the Maxwell cluster (8x RTX A6000), see section 4b
   external/rlft-bench          adityx23/rlft-bench  @ ee7968d (branch binary-advc)   = RLFT_ROOT
   external/lair-openpi         adityx23/lair-openpi @ 82dd427 (branch lair/main)     = LAIR_OPENPI
 ```
@@ -80,17 +81,32 @@ TrainConfig only for the `pi05_base` weights and defaults, and replaces its data
 * Data and model: `local/ocb_stack_3k`, π0.5 from `pi05_base`, action chunk 30, train-time RTC (delay
   ~ U[0, 15)), continuous state.
 * Optimization: batch 128, 30k steps, AdamW, lr 5e-5 cosine to 5e-6 (500 warmup), grad clip 1.0, EMA 0.999.
-* Compute: 4-GPU FSDP.
+* Compute: two profiles in `pi05_ladder.py`, picked with `LDR_CLUSTER`. Model, data and optimization are
+  identical; only the GPU layout differs (batch stays 128):
+
+  | `LDR_CLUSTER` | Cluster | GPUs | FSDP | Per GPU | Job script |
+  |---|---|---|---|---|---|
+  | `hpc` (default) | NYU Torch | 4x A100/H100 80 GB | 4 | 32 | `ladder/train_ladder.sbatch` |
+  | `maxwell` | Maxwell | 8x RTX A6000 48 GB | 8 | 16 | `maxwell/train_ladder.sh` |
 * Checkpoints: saved every 2500 steps. Kept: 5k, 10k, 15k, 20k, 25k, 29999 (`ladder/ladder_steps.txt`). For
   each kept step, `prune_ckpts.sh` deletes the optimizer state and keeps params + assets, except for the newest
   checkpoint.
 
 ```bash
 J=$(./submit.sh --parsable ladder/norm_ladder.sbatch)                                   # norm stats, CPU
-S=$(./submit.sh --parsable --dependency=afterok:$J ladder/smoke_ladder.sbatch)          # 60 steps, 4 GPUs
-T=$(./submit.sh --parsable --dependency=afterok:$S ladder/train_ladder.sbatch)          # full run, resumable
-./submit.sh --dependency=afterok:$T ladder/upload.sbatch   # public HF upload, needs ~/.config/ldr-hf/token (mode 600)
+T=$(./submit.sh --parsable --dependency=afterok:$J ladder/train_ladder.sbatch)          # 24 h limit, resumes
+F1=$(./submit.sh --parsable --dependency=afterany:$T ladder/train_ladder.sbatch)        # resume 1
+F2=$(./submit.sh --parsable --dependency=afterany:$F1 ladder/train_ladder.sbatch)       # resume 2
+./submit.sh --dependency=afterany:$F2 ladder/upload.sbatch  # public HF upload, needs ~/.config/ldr-hf/token (mode 600)
 ```
+* `train_ladder.sbatch` handles the chain itself:
+  * If training crashes, it cancels the queued resume and upload jobs.
+  * If it hits the 24 h limit, the next resume job continues from the newest checkpoint.
+  * Once step 29999 is saved, it cancels the leftover resume jobs, so the upload starts right away.
+* `smoke_ladder.sbatch` (60 steps, then an inference check) is optional. We skipped it to avoid a second 4-GPU queue
+  wait.
+* Training data on HF: `./submit.sh ladder/upload_data.sbatch` uploads `local/ocb_stack_3k` plus the norm stats to
+  the private dataset repo https://huggingface.co/datasets/adityx23/ocb-stack-3k. Maxwell downloads from there.
 * Outputs: `runs/ladder/checkpoints/pi05_ocbs3k/run/<step>/` and `runs/ladder/assets/` (norm stats). The
   checkpoints are uploaded to https://huggingface.co/adityx23/pi05-ocb-stack-ladder.
 * Never hold a GPU for CPU-only work (norm stats, export, downloads). Root has cancelled such jobs after about
@@ -99,6 +115,31 @@ T=$(./submit.sh --parsable --dependency=afterok:$S ladder/train_ladder.sbatch)  
 * `eval_ladder.sbatch` and `eval_watcher.slurm` were written for the 10-step, non-RTC policy (the overnight eval
   protocol: replan every 5 rows, each row held 5 control steps, 200 seeds 12345..12544). They are **not yet
   adapted** to the H=30 RTC ladder.
+
+## 4b. π0.5 checkpoint ladder on Maxwell (maxwell/)
+
+Maxwell can't submit to Torch or read its `/scratch`, so the data comes from Hugging Face and the environment is
+rebuilt from the same lockfile.
+```bash
+git clone https://github.com/adityx23/ROB-6323_RL1_Project.git && cd ROB-6323_RL1_Project
+GIT_LFS_SKIP_SMUDGE=1 git submodule update --init external/rlft-bench external/lair-openpi
+source config.sh
+export HF_TOKEN=<token with read access to adityx23/ocb-stack-3k>    # or: hf auth login
+bash maxwell/setup.sh      # uv 0.9.5 -> uv sync --frozen -> check_env; data + norm stats from HF; pi05_base + tokenizer
+nohup bash maxwell/train_ladder.sh > $RLFT_ROOT/logs/ldr-maxwell.log 2>&1 &      # or via sbatch, see the script header
+```
+* `setup.sh` needs internet, git, `python3` with pip, and ~45 GB free in `RLFT_ROOT`:
+  * venv ~10 GB, data 15 GB, weights 12 GB.
+  * Every step is skipped when its output exists, so rerun it after an interrupted download.
+  * `check_env.sh` must print `IDENTICAL`.
+* `train_ladder.sh` sets `LDR_CLUSTER=maxwell`:
+  * It refuses to start unless JAX sees 8 GPUs (or `LDR_FSDP` set to a divisor) and the norm stats are in place.
+  * It logs GPU utilization every 30 s to `logs/ldr-maxwell-gpu.csv`.
+  * Rerun it to resume from the newest checkpoint.
+* The outputs use the same paths and checkpoint ladder as on Torch: `runs/ladder/checkpoints/pi05_ocbs3k/run/<step>/`.
+  `ladder/upload_hf.py` uploads them the same way (`HF_TOKEN` set, `$RLFT_ROOT/.venv/bin/python ladder/upload_hf.py`).
+* If the loader can't keep the GPUs busy (low `utilization.gpu`), raise `LDR_WORKERS` (default 16) if the node has
+  the cores.
 
 ## 5. Overnight run (overnight/, 200 OCBench demos; see overnight/STATUS.md)
 
