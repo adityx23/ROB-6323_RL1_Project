@@ -42,7 +42,7 @@ def get() -> C.TrainConfig:
         batch_size=128, num_train_steps=STEPS, ema_decay=0.999,
         fsdp_devices=int(os.environ.get("LDR_FSDP", 4)), num_workers=int(os.environ.get("LDR_WORKERS", 16)),
         optimizer=_optimizer.AdamW(clip_gradient_norm=1.0),
-        lr_schedule=_optimizer.CosineDecaySchedule(warmup_steps=500, peak_lr=5e-5, decay_steps=STEPS, decay_lr=5e-6),
+        lr_schedule=_optimizer.CosineDecaySchedule(warmup_steps=min(500, STEPS // 10), peak_lr=5e-5, decay_steps=STEPS, decay_lr=5e-6),
         save_interval=int(os.environ.get("LDR_SAVE", 2500)), keep_period=int(os.environ.get("LDR_KEEP", 5000)),
         log_interval=50, wandb_enabled=False,
         checkpoint_base_dir=f"{RUNS}/checkpoints", assets_base_dir=f"{RUNS}/assets")
