@@ -1,0 +1,14 @@
+{
+  "_doc": "Cube colors and stacking rules for the diverse OCBench cube-stacking set (block-double-task2). Each episode gets one allowed (top, bottom) pair, sampled uniformly. 'fixed': only this order is ever shown. 'never': the two colors never appear in the same scene. 'free': both orders appear. Prompt: 'stack the <top> cube on top of the <bottom> cube'.",
+  "colors": {
+    "red":    [0.96, 0.26, 0.33],
+    "blue":   [0.35, 0.55, 0.91],
+    "green":  [0.06, 0.74, 0.21],
+    "yellow": [0.98, 0.84, 0.10],
+    "purple": [0.61, 0.28, 0.82]
+  },
+  "fixed": [["red", "blue"], ["purple", "red"], ["yellow", "green"], ["yellow", "purple"]],
+  "never": [["red", "green"], ["blue", "yellow"]],
+  "free":  [["red", "yellow"], ["blue", "green"], ["blue", "purple"], ["green", "purple"]],
+  "prompt": "stack the {top} cube on top of the {bottom} cube"
+}
