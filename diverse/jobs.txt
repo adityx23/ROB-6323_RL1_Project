@@ -1,2 +1,3 @@
 2026-11-25T12:01:35-05:00 diverse: pilot 24591483 (p000); full regen 24593640 (array 0-6, p000-p013, L40S); export+norm 24593641 (afterok); train 24593642 (afterok, 1xH200 gh133 reservation ka3658-h200, tandon_advanced)
 2026-11-25T12:07:00-05:00 pilot OK (62.7% usable: 70% oracle success, 69/77 right cube on top). Requeued for 16 parts: regen 24595001 (array 0-7, p001-p015; p000 = pilot) -> export+norm 24595003 -> train 24595004 (1xH200 gh133). Cancelled 24593640/41/42.
+2026-11-25T13:26:05-05:00 HF upload 24604931 (afterok export 24595003): replaces dataset adityx23/ocb-stack-3k (public) with the diverse set, renamed to adityx23/ocb-stack-diverse-1k; old 3k files deleted after upload
